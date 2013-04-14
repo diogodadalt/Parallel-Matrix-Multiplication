@@ -3,11 +3,31 @@
 #include <string.h>
 #include "write_matrix.h"
 
-char* writeVectorInString(int* vector) {
-	char* temp = (char*) calloc(1, sizeof(char));
-	return temp;
-}
+void writeMatrixInFile(char* filePath, Matrix* matrix) {
+	FILE* output;
+	int rows = matrix->rows;
+	int columns = matrix->columns;
+	int** matrixData = matrix->data;
+	int i = 0, j = 0;
+	
+	output = fopen(filePath, "w");
+	if (output == NULL) {
+     printf("Não foi possível abrir o arquivo de saída para escrita.\n");
+     exit(EXIT_FAILURE);
+  }
 
-void writeMatrixInFile(char* filePath, int** matrix) {
- // TODO
+	fprintf(output, "LINHAS = %d\n", rows);
+	fprintf(output, "COLUNAS = %d\n", columns);
+  
+  for (i = 0; i < rows; i++) {
+  	for (j = 0; j < columns; j++) {
+  		fprintf(output, "%d", matrixData[i][j]);
+  		if (j < (columns - 1))
+  			fprintf(output, " ");  			
+  	}
+  	if (i < (rows - 1))
+	  	fprintf(output, "\n");
+  }
+    
+  fclose(output);
 }

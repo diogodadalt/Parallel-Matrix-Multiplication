@@ -3,7 +3,6 @@
 
 #include "matrix.h"
 
-char* writeVectorInString(int* vector);
-void writeMatrixInFile(char* filePath, int** matrix);
+void writeMatrixInFile(char* filePath, Matrix* matrix);
 
 #endif

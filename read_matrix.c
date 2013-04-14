@@ -35,7 +35,6 @@ int* readVectorFromString(char* line, int columns) {
 	for (i = 0; i < lineSize; i++) {
 		if (line[i] == 32 || i == (lineSize-1)) {
 			temp = trimwhitespace(temp);
-    	printf("Here is the string, %s\n", temp);
     	sscanf(temp, "%d", &currentNumber);
     	temp = (char*) calloc(NUMBER_MAX_SIZE, sizeof(char));
     	lineNumbers[column] = currentNumber;
@@ -53,7 +52,7 @@ int* readVectorFromString(char* line, int columns) {
 }
 
 Matrix* readMatrixFromFile(char* filePath) {
-	FILE *m;
+	FILE* m;
 	char* line = NULL;
   size_t len = 0;
   ssize_t read;
@@ -78,13 +77,11 @@ Matrix* readMatrixFromFile(char* filePath) {
 				exit(EXIT_FAILURE);
 		} else {
 			matrixData[matrixLineIndex] = readVectorFromString(line, matrixColumns);
+			matrixLineIndex++;
 		}
 					
 		lineIndex++;
 	}
-	
-	printf("linhas: %d\n", matrixLines);
-	printf("colunas: %d\n", matrixColumns);
 	
 	if (line)
 		free(line);
