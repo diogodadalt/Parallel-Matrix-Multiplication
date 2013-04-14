@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "matrix.h"
+#include "read_matrix.h"
 
 #define NUMBER_MAX_SIZE 10
 
@@ -50,13 +52,14 @@ int* readVectorFromString(char* line, int columns) {
 	return lineNumbers;
 }
 
-int** readMatrixFromFile(char* filePath) {
+Matrix* readMatrixFromFile(char* filePath) {
 	FILE *m;
 	char* line = NULL;
   size_t len = 0;
   ssize_t read;
   int lineIndex = 1, matrixLineIndex = 0, matrixLines = 0, matrixColumns = 0, successParsing = 1;
-  int** matrix;
+  int** matrixData;
+  Matrix* matrix = (Matrix*) malloc(sizeof(Matrix));
     
   m = fopen(filePath, "r");
   
@@ -65,16 +68,16 @@ int** readMatrixFromFile(char* filePath) {
   
   while ((read = getline(&line, &len, m)) != -1) {		
 		if (lineIndex == 1) {
-			successParsing = sscanf(line, "LINHAS = %d", &matrixLines);
+			successParsing = sscanf(line, "LINHAS = %d", &matrixLines);			
 			if (!successParsing)
 				exit(EXIT_FAILURE);
-			matrix = (int**) calloc(matrixLines, sizeof(int*));
+			matrixData = (int**) calloc(matrixLines, sizeof(int*));
 		} else if (lineIndex == 2) {
 			successParsing = sscanf(line, "COLUNAS = %d", &matrixColumns);
 			if (!successParsing)
 				exit(EXIT_FAILURE);
 		} else {
-			matrix[matrixLineIndex] = readVectorFromString(line, matrixColumns);
+			matrixData[matrixLineIndex] = readVectorFromString(line, matrixColumns);
 		}
 					
 		lineIndex++;
@@ -87,4 +90,10 @@ int** readMatrixFromFile(char* filePath) {
 		free(line);
 		
 	fclose(m);
+	
+	matrix->rows = matrixLines;
+	matrix->columns = matrixColumns;
+	matrix->data = matrixData;
+	
+	return matrix;
 }

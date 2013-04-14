@@ -1,5 +1,5 @@
 LINHAS = 3
-COLUNAS = 2
+COLUNAS = 3
 1 0 0
 0 1 0
 0 0 1
