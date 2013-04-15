@@ -26,6 +26,18 @@ int multiplyVectors(int* line, int* column, int size) {
 	return cellValue;
 }
 
+int* multiplyRowByMatrix(int* row, Matrix* m) {
+	int columns = m->columns;
+	int* finalRow = (int*) calloc(columns, sizeof(int));
+	int i =0;
+	
+	for (i = 0; i < columns; i++) {
+		finalRow[i] = multiplyVectors(row, getColumn(m, i), m->rows);
+	}
+	
+	return finalRow;
+}
+
 Matrix* multiplyMatrices(Matrix* m1, Matrix* m2) {
 	Matrix* result = (Matrix*) malloc(sizeof(Matrix));
 	int rows = m1->rows;
@@ -34,10 +46,7 @@ Matrix* multiplyMatrices(Matrix* m1, Matrix* m2) {
 	int i = 0, j = 0;
 	
 	for (i = 0; i < m1->rows; i++) {
-		matrixData[i] = (int*) calloc(columns, sizeof(int));
-		for (j = 0; j < m2->columns; j++) {
-			matrixData[i][j] = multiplyVectors(m1->data[i], getColumn(m2, j), rows);
-		}
+		matrixData[i] = multiplyRowByMatrix(m1->data[i], m2);
 	}
 	
 	result->rows = rows;
