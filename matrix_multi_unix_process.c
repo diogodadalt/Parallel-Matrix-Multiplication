@@ -5,60 +5,39 @@
 #include "read_matrix.h"
 #include "write_matrix.h"
 
-int* getColumn(Matrix* m, int index) {
-	int rows = m->rows;
-	int** matrixData = m->data;
-	int* column = (int*) calloc(rows, sizeof(int));
+void wait_all(int* slots, int size) {
 	int i = 0;
 
-	for (i = 0; i < rows; i++)
-		column[i] = matrixData[i][index];
-  
-  return column;
-}
-
-int multiplyVectors(int* line, int* column, int size) {
-	int cellValue = 0, i = 0;
-	
-	for (i = 0; i < size; i++)
-		cellValue += line[i] * column[i];
-	
-	return cellValue;
-}
-
-int* multiplyRowByMatrix(int* row, Matrix* m) {
-	int columns = m->columns;
-	int* finalRow = (int*) calloc(columns, sizeof(int));
-	int i =0;
-	
-	for (i = 0; i < columns; i++) {
-		finalRow[i] = multiplyVectors(row, getColumn(m, i), m->rows);
+	for (i = 0; i < size; i++) {
+		printf("Parent (PID %d) waiting for child %d with PID %d to finish.\n", getpid(), i, slots[i]);
+		wait(slots[i]);		
 	}
-	
-	return finalRow;
 }
 
-Matrix* multiplyMatrices(Matrix* m1, Matrix* m2) {
-	Matrix* result = (Matrix*) malloc(sizeof(Matrix));
-	int rows = m1->rows;
-	int columns = m2->columns;
-	int** matrixData = (int**) calloc(rows, sizeof(int*));
-	int i = 0, j = 0;
-	
-	for (i = 0; i < m1->rows; i++) {
-		matrixData[i] = multiplyRowByMatrix(m1->data[i], m2);
+void startProcesses(pid_t* slots, int numProcesses, int current) {
+	pid_t pid;
+	if (numProcesses > 0 && numProcesses >= (current + 1)) {
+		pid = fork();
+		if (pid > 0) {
+			slots[current] = pid;
+			printf("I'm the parent (PID %d) spawning the child (number %d) with (PID %d)\n", getpid(), current, pid);
+			startProcesses(slots, numProcesses, current+1);
+			if (numProcesses == (current + 1)) {
+				wait_all(slots, numProcesses);
+			}
+		} else if (pid == 0) {
+			printf("I am a child: %d PID: %d\n", current, getpid());
+			//sleep(2);
+			return;
+		}
 	}
-	
-	result->rows = rows;
-	result->columns = columns;
-	result->data = matrixData;
-	
-	return result;
 }
 
 int main(int argc, char** argv) {
 
 	Matrix *m1 = NULL, *m2 = NULL, *result = NULL;
+	int numProcesses = 1;
+	pid_t* pids;
 
 	if (argc != 2) {
 		printf("É necessário passar o parâmetro da quantidade de processos.\n");
@@ -75,6 +54,10 @@ int main(int argc, char** argv) {
 	
 	result = multiplyMatrices(m1, m2);	
 	writeMatrixInFile(OUT, result);
+		
+	sscanf(argv[1], "%d", &numProcesses);
+	pids = (pid_t*) calloc(numProcesses, sizeof(pid_t));		
+	startProcesses(pids, numProcesses, 0);
 	 
 	return 0;
 }

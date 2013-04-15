@@ -6,4 +6,9 @@ typedef struct {
 	int** data;
 } Matrix;
 
+int* getColumn(Matrix* m, int index);
+int multiplyVectors(int* line, int* column, int size);
+int* multiplyRowByMatrix(int* row, Matrix* m);
+Matrix* multiplyMatrices(Matrix* m1, Matrix* m2);
+
 #endif
