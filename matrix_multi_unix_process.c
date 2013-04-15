@@ -6,11 +6,11 @@
 #include "write_matrix.h"
 
 void wait_all(int* slots, int size) {
-	int i = 0;
+  int i = 0;
 
 	for (i = 0; i < size; i++) {		
-		wait(slots[i]);
-		printf("Parent (PID %d) waiting for child %d with PID %d to finish.\n", getpid(), i, slots[i]);
+    wait(slots[i]);
+    printf("Parent (PID %d) waiting for child %d with PID %d to finish.\n", getpid(), i, slots[i]);
 	}
 }
 
