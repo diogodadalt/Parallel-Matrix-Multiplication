@@ -52,10 +52,15 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 	
-	result = multiplyMatrices(m1, m2);	
-	writeMatrixInFile(OUT, result);
-		
 	sscanf(argv[1], "%d", &numProcesses);
+	if (m1->rows < numProcesses) {
+		printf("O número de processos/threads não pode ser maior que a quantidade de linhas da primeira matriz de entrada.");
+		exit(EXIT_FAILURE);
+	}
+	
+	result = multiplyMatrices(m1, m2);	
+	writeMatrixInFile(OUT, result);		
+	
 	pids = (pid_t*) calloc(numProcesses, sizeof(pid_t));		
 	startProcesses(pids, numProcesses, 0);
 	 
