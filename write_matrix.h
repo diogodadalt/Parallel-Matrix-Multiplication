@@ -4,5 +4,6 @@
 #include "matrix.h"
 
 void writeMatrixInFile(char* filePath, Matrix* matrix);
+void writeMatrixInOutput(Matrix* matrix);
 
 #endif
