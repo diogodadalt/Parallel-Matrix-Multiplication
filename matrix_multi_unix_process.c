@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include <sys/types.h> /* for pid_t */
-//#include <sys/wait.h> /* for wait */
+#include <sys/types.h> /* for pid_t */
+#include <sys/wait.h> /* for wait */
 #include <sys/time.h> 
 #include "config.h"
 #include "matrix_definition.h"
@@ -16,7 +16,7 @@ void wait_all(int* slots, int size) {
   int i = 0;
 
 	for (i = 0; i < size; i++) {		
-    wait(slots[i]);
+    waitpid(slots[i], 0, 0);
     //printf("Parent (PID %d) waiting for child %d with PID %d to finish.\n", getpid(), i, slots[i]);
 	}
 }
