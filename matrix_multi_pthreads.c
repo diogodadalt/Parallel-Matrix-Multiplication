@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-//#include <sys/types.h> /* for pid_t */
-//#include <sys/wait.h> /* for wait */
 #include <sys/time.h> 
+#include <pthread.h>
 #include "config.h"
 #include "matrix_definition.h"
 #include "matrix.h"
@@ -11,6 +9,11 @@
 #include "write_matrix.h"
 #include "shared_matrix.h"
 #include "metrics.h"
+
+typedef struct {
+	Matrix *m1, *m2, *result;
+	int start, end, threadId;
+} Input;
 
 void wait_all(int* slots, int size) {
   int i = 0;
@@ -21,49 +24,67 @@ void wait_all(int* slots, int size) {
 	}
 }
 
-pid_t doWork(Matrix* m1, Matrix* m2, Matrix* result, int start, int end) {
-	pid_t pid = fork();
-	if (pid == 0) {
-		//printf("DoWork child with (PID %d).\n", getpid());
-		Matrix* result = readSharedMatrix(m1->rows, m2->columns);
-		//writeMatrixInOutput(result);
-		multiplyRowsByMatrix(m1, m2, result, start, end);
-		//detach(result);
-		free(result);
-		exit(EXIT_SUCCESS);
-	}
-	return pid;
+void* doWork(void* arg) {
+	Input* in = (Input*)arg;
+	
+	multiplyRowsByMatrix(in->m1, in->m2, in->result, in->start, in->end);	
+	
+	pthread_exit(0);
 }
 
-Matrix* balanceWork(Matrix* m1, Matrix* m2, int numProcesses) {
-	int i, amountOfWorkToEach = 0, workLeft = 0, aditionalWork = 0, start, end, lastStartIndex = 0;
-	Matrix* result = createSharedMatrix(m1->rows, m2->columns);
-	pid_t* pids = (pid_t*) calloc(numProcesses, sizeof(pid_t));
-	pid_t parent = getpid();
-	pid_t current = parent;
+pthread_t start(Matrix* m1, Matrix* m2, Matrix* result, int start, int end, int threadId) {
+	pthread_t thread;
+	int status;
+	Input* input = (Input*)malloc(sizeof(Input));
 	
-	amountOfWorkToEach = (m1->rows / numProcesses);
-	workLeft = m1->rows % numProcesses;
+	input->m1 = m1;
+	input->m2 = m2;
+	input->result = result;
+	input->start = start;
+	input->end = end;
+	input->threadId = threadId;
+	
+	status = pthread_create(&thread, NULL, doWork, (void*)input);
+  if (status != 0)
+  	exit(EXIT_FAILURE);
+  
+	//multiplyRowsByMatrix(m1, m2, result, start, end);	
+	
+	return thread;
+}
+
+Matrix* balanceWork(Matrix* m1, Matrix* m2, int numThreads) {
+	int i, amountOfWorkToEach = 0, workLeft = 0, aditionalWork = 0, start, end, lastStartIndex = 0;
+	Matrix* result = (Matrix*) malloc(sizeof(Matrix));
+	pthread_t* threads = (pthread_t*) calloc(numThreads, sizeof(pthread_t));
+	pid_t parent = getpid();
+	thread current = parent;
+	
+	result->data = (int**) calloc(rows, sizeof(int*));;
+	result->rows = rows;
+	result->columns = columns;  
+	
+	amountOfWorkToEach = (m1->rows / numThreads);
+	workLeft = m1->rows % numThreads;
 	aditionalWork = (workLeft > 0) ? 1 : 0;
 	workLeft--;
 	
-	for (i = 0; i < numProcesses; i++) {
+	for (i = 0; i < numThreads; i++) {
 		if (current > 0) {
 			start = lastStartIndex;
 			end = start + amountOfWorkToEach + aditionalWork;
 			lastStartIndex = end;
-			current = doWork(m1, m2, result, start, end);
+			current = start(m1, m2, result, start, end);
 		}
 		
-		if (current > 0) {
-			//printf("balanceWork parent with (PID %d), start: %d, end: %d, amountOfWorkToEach: %d, aditionalWork: %d.\n", getpid(), i, i + amountOfWorkToEach + aditionalWork, amountOfWorkToEach, aditionalWork);
-			pids[i] = current;
+		if (current > 0) {			
+			threads[i] = current;
 			aditionalWork = (workLeft > 0) ? 1 : 0;
 			workLeft--;
 		}
 	}
 	if (getpid() == parent)
-		wait_all(pids, numProcesses);		
+		wait_all(threads, numThreads);		
 		
 	return result;
 }
@@ -90,12 +111,7 @@ int main(int argc, char** argv) {
 	if (m1->rows < numProcesses) {
 		printf("O número de processos/threads não pode ser maior que a quantidade de linhas da primeira matriz de entrada.\n");
 		exit(EXIT_FAILURE);
-	}
-	
-	if (numProcesses < 1) {
-		printf("O número de processos/threads tem que ser maior que 0.\n");
-		exit(EXIT_FAILURE);
-	}
+	}	
 	
 	gettimeofday(&t1, NULL);
 	resultSequential = multiplyMatrices(m1, m2);

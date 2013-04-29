@@ -64,11 +64,8 @@ Matrix* multiplyMatrices(Matrix* m1, Matrix* m2) {
 
 void multiplyRowsByMatrix(Matrix* m1, Matrix* m2, Matrix* result, int start, int end) {
 	int i;
-	//printf("start: %d, end: %d\n", start, end);
 	for (i = start; i < end; i++) {
 		//printf("\nprocess PID (%d) row: %d\n\n", getpid(), i);
 		multiplyRowByMatrix2(m1->data[i], m2, result->data[i]);
-		//printf("\nprocess PID (%d) row: %d\n\n", getpid(), i);
 	}
-	//writeMatrixInOutput(result);
 }
