@@ -35,7 +35,7 @@ int* multiplyRowByMatrix(int* row, Matrix* m) {
 	return finalRow;
 }
 
-void multiplyRowByMatrix2(int* row, Matrix* m, int* finalRow) {
+void multiplyRowByMatrixAndSetResult(int* row, Matrix* m, int* finalRow) {
 	int columns = m->columns;
 	int i =0;
 	
@@ -65,7 +65,6 @@ Matrix* multiplyMatrices(Matrix* m1, Matrix* m2) {
 void multiplyRowsByMatrix(Matrix* m1, Matrix* m2, Matrix* result, int start, int end) {
 	int i;
 	for (i = start; i < end; i++) {
-		//printf("\nprocess PID (%d) row: %d\n\n", getpid(), i);
-		multiplyRowByMatrix2(m1->data[i], m2, result->data[i]);
+		multiplyRowByMatrixAndSetResult(m1->data[i], m2, result->data[i]);
 	}
 }

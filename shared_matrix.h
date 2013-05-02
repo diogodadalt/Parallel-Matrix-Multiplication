@@ -3,7 +3,7 @@
 
 #include "matrix_definition.h"
 
-#define SHM_KEY 5678
+#define SHM_KEY 6789
 
 Matrix* createSharedMatrix(int rows, int columns);
 Matrix* readSharedMatrix(int rows, int columns);

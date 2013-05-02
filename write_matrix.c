@@ -32,7 +32,7 @@ void writeMatrixInFile(char* filePath, Matrix* matrix) {
   fclose(output);
 }
 
-void writeMatrixInOutput(Matrix* matrix) {
+void writeMatrixInConsole(Matrix* matrix) {
 	int rows = matrix->rows;
 	int columns = matrix->columns;
 	int** matrixData = matrix->data;

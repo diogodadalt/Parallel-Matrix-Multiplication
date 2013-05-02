@@ -11,6 +11,7 @@
 #include "write_matrix.h"
 #include "shared_matrix.h"
 #include "metrics.h"
+#include "error_handling.h"
 
 void wait_all(int* slots, int size) {
   int i = 0;
@@ -26,7 +27,7 @@ pid_t doWork(Matrix* m1, Matrix* m2, Matrix* result, int start, int end) {
 	if (pid == 0) {
 		//printf("DoWork child with (PID %d).\n", getpid());
 		Matrix* result = readSharedMatrix(m1->rows, m2->columns);
-		//writeMatrixInOutput(result);
+		//writeMatrixInConsole(result);
 		multiplyRowsByMatrix(m1, m2, result, start, end);
 		//detach(result);
 		free(result);
@@ -35,19 +36,19 @@ pid_t doWork(Matrix* m1, Matrix* m2, Matrix* result, int start, int end) {
 	return pid;
 }
 
-Matrix* balanceWork(Matrix* m1, Matrix* m2, int numProcesses) {
+Matrix* balanceWork(Matrix* m1, Matrix* m2, int numParallelTasks) {
 	int i, amountOfWorkToEach = 0, workLeft = 0, aditionalWork = 0, start, end, lastStartIndex = 0;
 	Matrix* result = createSharedMatrix(m1->rows, m2->columns);
-	pid_t* pids = (pid_t*) calloc(numProcesses, sizeof(pid_t));
+	pid_t* pids = (pid_t*) calloc(numParallelTasks, sizeof(pid_t));
 	pid_t parent = getpid();
 	pid_t current = parent;
 	
-	amountOfWorkToEach = (m1->rows / numProcesses);
-	workLeft = m1->rows % numProcesses;
+	amountOfWorkToEach = (m1->rows / numParallelTasks);
+	workLeft = m1->rows % numParallelTasks;
 	aditionalWork = (workLeft > 0) ? 1 : 0;
 	workLeft--;
 	
-	for (i = 0; i < numProcesses; i++) {
+	for (i = 0; i < numParallelTasks; i++) {
 		if (current > 0) {
 			start = lastStartIndex;
 			end = start + amountOfWorkToEach + aditionalWork;
@@ -56,64 +57,38 @@ Matrix* balanceWork(Matrix* m1, Matrix* m2, int numProcesses) {
 		}
 		
 		if (current > 0) {
-			//printf("balanceWork parent with (PID %d), start: %d, end: %d, amountOfWorkToEach: %d, aditionalWork: %d.\n", getpid(), i, i + amountOfWorkToEach + aditionalWork, amountOfWorkToEach, aditionalWork);
 			pids[i] = current;
 			aditionalWork = (workLeft > 0) ? 1 : 0;
 			workLeft--;
 		}
 	}
 	if (getpid() == parent)
-		wait_all(pids, numProcesses);		
+		wait_all(pids, numParallelTasks);		
 		
 	return result;
 }
 
 int main(int argc, char** argv) {
 	Matrix *m1 = NULL, *m2 = NULL, *resultSequential = NULL, *resultParallel = NULL;
-	int numProcesses = 1;
-	struct timeval t1, t2, t3, t4, diff1, diff2;
+	int numParallelTasks = 1;
+	struct timeval diff1, diff2;
 
-	if (argc != 2) {
-		printf("É necessário passar o parâmetro da quantidade de processos.\n");
-		exit(EXIT_FAILURE);
-	}
+	checkArgsSize(argc);
 	
 	m1 = readMatrixFromFile(M1);
 	m2 = readMatrixFromFile(M2);
 	 
-	if (m1->columns != m2->rows) {
-		printf("A matriz 1 tem quantidade de colunas diferente da quantidade de linhas da matriz 2, portanto não é possível efetuar a multiplicação delas.\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	sscanf(argv[1], "%d", &numProcesses);
-	if (m1->rows < numProcesses) {
-		printf("O número de processos/threads não pode ser maior que a quantidade de linhas da primeira matriz de entrada.\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	if (numProcesses < 1) {
-		printf("O número de processos/threads tem que ser maior que 0.\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	gettimeofday(&t1, NULL);
-	resultSequential = multiplyMatrices(m1, m2);
-	gettimeofday(&t2, NULL);
+	checkInputMatrices(m1, m2);
+	checkNumTasks(argv, &numParallelTasks, m1);
+		
+	diff1 = measureMultiplyMatrices(m1, m2, &resultSequential, multiplyMatrices);
 	writeMatrixInFile(OUT, resultSequential);	
 	
-	gettimeofday(&t3, NULL);
-	resultParallel = balanceWork(m1, m2, numProcesses);
-	gettimeofday(&t4, NULL);
-	//writeMatrixInOutput(resultParallel);
-	writeMatrixInFile("output/outpar.txt", resultParallel);	
+	diff2 = measureBalanceWork(m1, m2, numParallelTasks, &resultParallel, balanceWork);	
+	writeMatrixInFile("output/outparthreads.txt", resultParallel);	
 	
-	timeval_subtract(&diff1, &t2, &t1);
-	timeval_subtract(&diff2, &t4, &t3);  
- 	printf("Tempo levado pela abordagem sequencial: ");
- 	printTime(diff1);
- 	printf("Tempo levado pela abordagem paralela: ");
-	printTime(diff2);
-	 
+	printTime(diff1, "Tempo levado pela abordagem sequencial: ");
+	printTime(diff2, "Tempo levado pela abordagem paralela: ");
+
 	return 0;
 }
