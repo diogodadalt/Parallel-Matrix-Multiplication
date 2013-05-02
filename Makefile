@@ -2,7 +2,7 @@ proc:
 	gcc -o main matrix_multi_unix_process.c matrix.c read_matrix.c write_matrix.c shared_matrix.c metrics.c
 
 thread:
-	gcc -o main matrix_multi_pthreads.c matrix.c read_matrix.c write_matrix.c shared_matrix.c metrics.c
+	gcc -o main matrix_multi_pthreads.c matrix.c read_matrix.c write_matrix.c shared_matrix.c metrics.c -lpthread
 	
 clean:
 	rm main

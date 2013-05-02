@@ -15,12 +15,12 @@ typedef struct {
 	int start, end, threadId;
 } Input;
 
-void wait_all(int* slots, int size) {
+void wait_all(pthread_t* slots, int size) {
   int i = 0;
 
-	for (i = 0; i < size; i++) {		
-    wait(slots[i]);
-    //printf("Parent (PID %d) waiting for child %d with PID %d to finish.\n", getpid(), i, slots[i]);
+	for (i = 0; i < size; i++) {		    	
+    	pthread_join(slots[i], NULL);
+    	//printf("Parent (PID %d) waiting for child %d with PID %d to finish.\n", getpid(), i, slots[i]);
 	}
 }
 
@@ -32,8 +32,7 @@ void* doWork(void* arg) {
 	pthread_exit(0);
 }
 
-pthread_t start(Matrix* m1, Matrix* m2, Matrix* result, int start, int end, int threadId) {
-	pthread_t thread;
+pthread_t startWorker(Matrix* m1, Matrix* m2, Matrix* result, int start, int end, pthread_t* threads, int threadIndex) {
 	int status;
 	Input* input = (Input*)malloc(sizeof(Input));
 	
@@ -42,27 +41,28 @@ pthread_t start(Matrix* m1, Matrix* m2, Matrix* result, int start, int end, int 
 	input->result = result;
 	input->start = start;
 	input->end = end;
-	input->threadId = threadId;
+	input->threadId = threadIndex;
 	
-	status = pthread_create(&thread, NULL, doWork, (void*)input);
-  if (status != 0)
-  	exit(EXIT_FAILURE);
+	status = pthread_create(&threads[threadIndex], NULL, doWork, (void*)input);
+
+  	if (status != 0)
+  		exit(EXIT_FAILURE);
   
 	//multiplyRowsByMatrix(m1, m2, result, start, end);	
 	
-	return thread;
+	return threads[threadIndex];
 }
 
 Matrix* balanceWork(Matrix* m1, Matrix* m2, int numThreads) {
 	int i, amountOfWorkToEach = 0, workLeft = 0, aditionalWork = 0, start, end, lastStartIndex = 0;
 	Matrix* result = (Matrix*) malloc(sizeof(Matrix));
 	pthread_t* threads = (pthread_t*) calloc(numThreads, sizeof(pthread_t));
-	pid_t parent = getpid();
-	thread current = parent;
+	//pid_t parent = getpid();
+	//thread current = parent;
 	
-	result->data = (int**) calloc(rows, sizeof(int*));;
-	result->rows = rows;
-	result->columns = columns;  
+	result->data = (int**) calloc(m1->rows, sizeof(int*));;
+	result->rows = m1->rows;
+	result->columns = m2->columns;  
 	
 	amountOfWorkToEach = (m1->rows / numThreads);
 	workLeft = m1->rows % numThreads;
@@ -70,21 +70,14 @@ Matrix* balanceWork(Matrix* m1, Matrix* m2, int numThreads) {
 	workLeft--;
 	
 	for (i = 0; i < numThreads; i++) {
-		if (current > 0) {
-			start = lastStartIndex;
-			end = start + amountOfWorkToEach + aditionalWork;
-			lastStartIndex = end;
-			current = start(m1, m2, result, start, end);
-		}
-		
-		if (current > 0) {			
-			threads[i] = current;
-			aditionalWork = (workLeft > 0) ? 1 : 0;
-			workLeft--;
-		}
+		start = lastStartIndex;
+		end = start + amountOfWorkToEach + aditionalWork;
+		lastStartIndex = end;
+		startWorker(m1, m2, result, start, end, threads, i);		
+		aditionalWork = (workLeft > 0) ? 1 : 0;
+		workLeft--;		
 	}
-	if (getpid() == parent)
-		wait_all(threads, numThreads);		
+	wait_all(threads, numThreads);		
 		
 	return result;
 }
@@ -130,6 +123,6 @@ int main(int argc, char** argv) {
  	printTime(diff1);
  	printf("Tempo levado pela abordagem paralela: ");
 	printTime(diff2);
-	 
+	pthread_exit(0);
 	return 0;
 }
