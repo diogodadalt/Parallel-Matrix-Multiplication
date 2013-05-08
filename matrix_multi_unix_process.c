@@ -71,7 +71,7 @@ Matrix* balanceWork(Matrix* m1, Matrix* m2, int numParallelTasks) {
 int main(int argc, char** argv) {
 	Matrix *m1 = NULL, *m2 = NULL, *resultSequential = NULL, *resultParallel = NULL;
 	int numParallelTasks = 1;
-	struct timeval diff1, diff2;
+	struct timeval diff;
 
 	checkArgsSize(argc);
 	
@@ -80,15 +80,11 @@ int main(int argc, char** argv) {
 	 
 	checkInputMatrices(m1, m2);
 	checkNumTasks(argv, &numParallelTasks, m1);
-		
-	diff1 = measureMultiplyMatrices(m1, m2, &resultSequential, multiplyMatrices);
-	writeMatrixInFile(OUT, resultSequential);	
 	
-	diff2 = measureBalanceWork(m1, m2, numParallelTasks, &resultParallel, balanceWork);	
-	writeMatrixInFile("output/outparthreads.txt", resultParallel);	
+	diff = measureBalanceWork(m1, m2, numParallelTasks, &resultParallel, balanceWork);	
+	writeMatrixInFile(OUT, resultParallel);
 	
-	printTime(diff1, "Tempo levado pela abordagem sequencial: ");
-	printTime(diff2, "Tempo levado pela abordagem paralela: ");
+	printTime("Tempo levado para executar a multiplicação com %d processos: ", numParallelTasks , diff);
 
 	return 0;
 }

@@ -10,8 +10,9 @@ int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval 
   return (diff<0);
 }
 
-void printTime(struct timeval time, char* msg) {	
-	printf("%s%ld.%06ld\n", msg, time.tv_sec, time.tv_usec);
+void printTime(char* msg, int numTasks, struct timeval time) {
+	printf(msg, numTasks);
+	printf("%ld.%06ld\n", time.tv_sec, time.tv_usec);
 }
 
 struct timeval measureMultiplyMatrices(Matrix* m1, Matrix* m2, Matrix** result, Matrix* (*functionPtr)(Matrix*, Matrix*)) {
